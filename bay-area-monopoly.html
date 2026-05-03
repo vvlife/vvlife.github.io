@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大灣區大亨 - 像素風桌遊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg-color: #f4ecd8; }
+        body {
+            background-color: var(--bg-color);
+            font-family: 'DotGothic16', sans-serif;
+            color: #1a1a1a;
+            touch-action: manipulation;
+        }
+        
+        .pixel-box {
+            background: white; border: 4px solid #1a1a1a;
+            box-shadow: 6px 6px 0px 0px rgba(26,26,26,1); border-radius: 2px;
+        }
+        .pixel-panel {
+            background: #e5e7eb; border: 4px solid #1a1a1a;
+            box-shadow: inset -4px -4px 0px 0px rgba(0,0,0,0.1), inset 4px 4px 0px 0px rgba(255,255,255,0.5);
+        }
+        .pixel-btn {
+            background: #fbbf24; border: 4px solid #1a1a1a;
+            box-shadow: 4px 4px 0px 0px rgba(26,26,26,1);
+            text-transform: uppercase; transition: all 0.1s; cursor: pointer; font-weight: bold;
+        }
+        .pixel-btn:hover:not(:disabled) { background: #f59e0b; }
+        .pixel-btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0px 0px 0px 0px rgba(26,26,26,1); }
+        .pixel-btn:disabled { background: #9ca3af; cursor: not-allowed; box-shadow: 4px 4px 0px 0px rgba(26,26,26,0.5); }
+        
+        .map-container {
+            position: relative; background-color: #93c5fd; 
+            background-image: radial-gradient(#60a5fa 2px, transparent 2px); background-size: 20px 20px;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7); border-color: #f59e0b; }
+            70% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); border-color: #fff; }
+            100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); border-color: #f59e0b; }
+        }
+        .highlight-city { animation: highlight-pulse 1.5s infinite; z-index: 20; cursor: pointer; }
+
+        @keyframes popup-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-popup { animation: popup-in 0.2s ease-out forwards; }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-left: 2px solid #000; }
+        ::-webkit-scrollbar-thumb { background: #888; border: 2px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 核心數據配置 ---
+        const INDUSTRIES = {
+            '金融': { name: '金融', type: '第三產業', demand: 3, synergy: 10, color: 'bg-purple-600', icon: '💵' },
+            '高新技術': { name: '高新技術', type: '第三產業', demand: 3, synergy: 1, color: 'bg-blue-500', icon: '💾' },
+            '旅遊及文化': { name: '旅遊及文化', type: '第三產業', demand: 2, synergy: 7, color: 'bg-teal-400', icon: '🧳' },
+            '紡織及成衣': { name: '紡織及成衣', type: '第二產業', demand: 2, synergy: 3, color: 'bg-pink-600', icon: '👕' },
+            '家電及電器': { name: '家電及電器', type: '第二產業', demand: 2, synergy: 3, color: 'bg-orange-500', icon: '🔌' },
+            '食品': { name: '食品', type: '第二產業', demand: 2, synergy: 3, color: 'bg-green-700', icon: '🍽️' },
+            '醫藥': { name: '醫藥', type: '第二產業', demand: 2, synergy: 3, color: 'bg-red-600', icon: '➕' },
+            '家具': { name: '家具', type: '第二產業', demand: 3, synergy: 3, color: 'bg-red-800', icon: '🪑' },
+            '重工': { name: '重工', type: '第二產業', demand: 3, synergy: 3, color: 'bg-gray-800', icon: '⚙️' },
+            '石油化工': { name: '石油化工', type: '第二產業', demand: 3, synergy: 3, color: 'bg-amber-900', icon: '🛢️' },
+        };
+
+        const CITIES = {
+            '肇慶': { id: '肇慶', color: 'bg-orange-400', basePrices: [0, 1, 2, 3], allowed: ['紡織及成衣', '家具', '食品'], pos: { x: 12, y: 15 } },
+            '佛山': { id: '佛山', color: 'bg-green-500', basePrices: [1, 2, 3, 4, 5], allowed: ['重工', '家電及電器', '紡織及成衣', '食品', '醫藥'], pos: { x: 33, y: 38 } },
+            '廣州': { id: '廣州', color: 'bg-gray-400', basePrices: [1, 2, 3, 4, 5], allowed: ['重工', '家電及電器', '食品', '醫藥'], pos: { x: 50, y: 20 } },
+            '東莞': { id: '東莞', color: 'bg-lime-500', basePrices: [1, 2, 3], allowed: ['重工', '食品'], pos: { x: 72, y: 38 } },
+            '惠州': { id: '惠州', color: 'bg-cyan-500', basePrices: [0, 1, 2, 3], allowed: ['重工', '石油化工'], pos: { x: 88, y: 18 } },
+            '江門': { id: '江門', color: 'bg-pink-500', basePrices: [0, 1, 2, 3], allowed: ['金融', '家電及電器', '紡織及成衣', '食品'], pos: { x: 12, y: 60 } },
+            '中山': { id: '中山', color: 'bg-blue-800', basePrices: [1, 2, 4, 5], allowed: ['重工', '紡織及成衣', '食品'], pos: { x: 42, y: 62 } },
+            '珠海': { id: '珠海', color: 'bg-purple-500', basePrices: [1, 2, 3, 4, 5], allowed: ['重工', '石油化工', '醫藥'], pos: { x: 33, y: 85 } },
+            '澳門': { id: '澳門', color: 'bg-yellow-400', basePrices: [3, 4, 6], allowed: ['金融', '旅遊及文化'], pos: { x: 15, y: 88 } },
+            '深圳': { id: '深圳', color: 'bg-orange-500', basePrices: [4, 5, 6, 8], allowed: ['高新技術', '金融'], pos: { x: 85, y: 58 } },
+            '香港': { id: '香港', color: 'bg-red-600', basePrices: [5, 6, 8, 10], allowed: ['金融', '旅遊及文化'], pos: { x: 75, y: 88 } },
+        };
+
+        const BASE_CONNECTIONS = {
+            '肇慶': ['佛山', '江門'],
+            '佛山': ['肇慶', '廣州', '中山', '江門'],
+            '廣州': ['佛山', '東莞'],
+            '東莞': ['廣州', '深圳', '惠州'],
+            '惠州': ['東莞', '深圳'],
+            '江門': ['肇慶', '佛山', '中山', '珠海'],
+            '中山': ['佛山', '江門', '珠海'], 
+            '珠海': ['中山', '江門', '澳門'], 
+            '澳門': ['珠海'], 
+            '深圳': ['東莞', '惠州', '香港'], 
+            '香港': ['深圳'] 
+        };
+
+        const DYNAMIC_LINES = [
+            { from: '廣州', to: '深圳', unlockTurn: 6, stroke: '#ef4444', label: '廣深高鐵' }, // 紅色
+            { from: '香港', to: '珠海', unlockTurn: 7, stroke: '#22c55e', label: '港珠澳大橋' }, // 綠色
+            { from: '香港', to: '澳門', unlockTurn: 7, stroke: '#22c55e', label: '港珠澳大橋' }, // 綠色
+            { from: '深圳', to: '中山', unlockTurn: 10, stroke: '#eab308', label: '深中通道' }  // 黃色
+        ];
+
+        const PROFIT_MATRIX = {
+            '金融': { '香港': 10, '澳門': 7, '深圳': 10, '廣州': 10, '肇慶': 0, '佛山': 0, '東莞': 0, '惠州': 0, '江門': 0, '中山': 0, '珠海': 0 },
+            '高新技術': { '香港': 1, '深圳': 1, '廣州': 10, '東莞': 10, '澳門': 0, '肇慶': 0, '佛山': 0, '惠州': 0, '江門': 0, '中山': 0, '珠海': 0 },
+            '旅遊及文化': { '香港': 9, '澳門': 11, '深圳': 15, '廣州': 1, '珠海': 3, '東莞': 3, '佛山': 3, '中山': 3, '惠州': 5, '肇慶': 5, '江門': 5 },
+            '紡織及成衣': { '香港': -5, '澳門': -5, '深圳': -3, '廣州': -1, '珠海': 1, '東莞': 1, '佛山': 4, '中山': 4, '惠州': 3, '肇慶': 5, '江門': 6 },
+            '家電及電器': { '香港': -5, '澳門': -5, '深圳': -3, '廣州': -1, '珠海': 1, '東莞': 1, '佛山': 4, '中山': 4, '惠州': 3, '肇慶': 6, '江門': 6 },
+            '食品': { '香港': -5, '澳門': -5, '深圳': -3, '廣州': -1, '珠海': 1, '東莞': 1, '佛山': 4, '中山': 4, '惠州': 3, '肇慶': 3, '江門': 3 },
+            '醫藥': { '香港': -5, '澳門': -5, '深圳': -3, '廣州': -1, '珠海': 4, '東莞': 1, '佛山': 4, '中山': 1, '惠州': 3, '肇慶': 3, '江門': 3 },
+            '家具': { '香港': -7, '澳門': -7, '深圳': -4, '廣州': -1, '珠海': 2, '東莞': 2, '佛山': 2, '中山': 2, '惠州': 5, '肇慶': 8, '江門': 5 },
+            '重工': { '香港': -7, '澳門': -7, '深圳': -4, '廣州': -1, '珠海': 2, '東莞': 2, '佛山': 2, '中山': 2, '惠州': 5, '肇慶': 5, '江門': 5 },
+            '石油化工': { '香港': -7, '澳門': -4, '深圳': -1, '廣州': 2, '珠海': 5, '東莞': 2, '佛山': 2, '中山': 2, '惠州': 8, '肇慶': 5, '江門': 5 }
+        };
+
+        const EVENTS = [
+            { id: 1, year: 1977, title: "改革伊始", desc: "開放經濟特區，廣東地價+1。可興建：紡織、食品、家電。", effects: { landPriceChange: { default: 1, exceptions: ['香港', '澳門'] }, unlockedIndustries: ['紡織及成衣', '食品', '家電及電器'] } },
+            { id: 2, year: 1982, title: "一個窗口對外", desc: "深圳特區大膽改革。深圳地價+1，在深圳建廠不消耗行動力。", effects: { landPriceChange: { '深圳': 1 }, freeBuildCity: '深圳' } },
+            { id: 3, year: 1988, title: "物價闖關", desc: "通貨膨脹，搶購潮。全國地價-1。紡織、食品、家電、重工收入減半。", effects: { landPriceChange: { default: -1, exceptions: [] }, incomeModifier: { target: ['紡織及成衣', '食品', '家電及電器', '重工'], mult: 0.5 } } },
+            { id: 4, year: 1992, title: "小平南巡", desc: "全面開放！解鎖重工、石油化工、醫藥、家具。深圳、珠海地價+2。所有人獲得20萬，行動力+1。", effects: { unlockedIndustries: ['重工', '石油化工', '醫藥', '家具'], landPriceChange: { '深圳': 2, '珠海': 2 }, addMoney: 200, addMaxAP: 1 } },
+            { id: 5, year: 2001, title: "中國入世", desc: "加入WTO。東莞、佛山、中山地價+1。同業優勢翻倍！", effects: { landPriceChange: { '東莞': 1, '佛山': 1, '中山': 1 }, doubleSynergy: true } },
+            { id: 6, year: 2011, title: "十二五規劃", desc: "高鐵廣深段開通(新增:廣州-深圳直達)。廣州、深圳地價+1。電子信息、高新技術利潤+2。", effects: { landPriceChange: { '廣州': 1, '深圳': 1 }, incomeModifierFlat: { target: ['高新技術'], add: 2 } } },
+            { id: 7, year: 2016, title: "十三五規劃", desc: "港珠澳大橋通車(新增:香港-珠海、澳門直達)。香港、澳門地價+1。第三產業開放（金融、旅遊、高新）。", effects: { landPriceChange: { '香港': 1, '澳門': 1 }, unlockedIndustries: ['金融', '旅遊及文化', '高新技術'] } },
+            { id: 8, year: 2018, title: "中美貿易白熱化", desc: "出口訂單減少。紡織、家電、重工收入減半。高新技術利潤+7！", effects: { incomeModifier: { target: ['紡織及成衣', '家電及電器', '重工'], mult: 0.5 }, incomeModifierFlat: { target: ['高新技術'], add: 7 } } },
+            { id: 9, year: 2020, title: "新冠大流行", desc: "全球封鎖。醫藥收入翻倍！旅遊文化歸0。無法進入港澳。", effects: { incomeModifier: { target: ['醫藥'], mult: 2 }, incomeModifier: { target: ['旅遊及文化'], mult: 0 }, blockCity: ['香港', '澳門'] } },
+            { id: 10, year: 2025, title: "中國製造2025", desc: "深中通道通車(新增:深圳-中山直達)。製造業升級！重工業收入翻倍！", effects: { incomeModifier: { target: ['重工'], mult: 2 } } }
+        ];
+
+        const INITIAL_DECK = [
+            ...Array(3).fill('高新技術'), ...Array(3).fill('金融'), ...Array(3).fill('石油化工'), ...Array(4).fill('重工'),
+            ...Array(3).fill('食品'), ...Array(4).fill('紡織及成衣'), ...Array(4).fill('家具'), ...Array(2).fill('家電及電器'),
+            ...Array(3).fill('旅遊及文化'), ...Array(4).fill('醫藥')
+        ];
+
+        // BFS 簡單尋路，用於 AI (更新：接收 currentConnections 參數)
+        const getNextStepToTarget = (start, target, blockedCities, currentConnections) => {
+            if (start === target) return start;
+            let queue = [[start]];
+            let visited = new Set([start]);
+
+            while(queue.length > 0) {
+                let path = queue.shift();
+                let node = path[path.length - 1];
+
+                for (let neighbor of currentConnections[node]) {
+                    if (blockedCities.includes(neighbor)) continue;
+                    if (neighbor === target) return path.length > 1 ? path[1] : neighbor;
+                    if (!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push([...path, neighbor]);
+                    }
+                }
+            }
+            return start; // 找不到路
+        };
+
+        const App = () => {
+            const { useMemo } = React;
+            const [turn, setTurn] = useState(1);
+            const [phase, setPhase] = useState('EVENT');
+            const [maxAP, setMaxAP] = useState(2);
+            const [unlockedInd, setUnlockedInd] = useState([]);
+            const [deckPool, setDeckPool] = useState([...INITIAL_DECK]);
+            const [logs, setLogs] = useState([{ msg: "遊戲開始！1977年大灣區建設啟動。", type: "sys" }]);
+            
+            // 事件彈窗狀態
+            const [showEventPopup, setShowEventPopup] = useState(false);
+            const eventTimerRef = useRef(null);
+
+            // 設置選單狀態
+            const [settingsOpen, setSettingsOpen] = useState(false);
+            const [showPreviewIcons, setShowPreviewIcons] = useState(true);
+            const [layoutMode, setLayoutMode] = useState('desktop'); 
+            
+            // 將地價變更為「地價修飾符號」，具體地價通過公式動態計算
+            const [cityPriceModifiers, setCityPriceModifiers] = useState(() => {
+                const init = {}; Object.keys(CITIES).forEach(c => init[c] = 0); return init;
+            });
+            const [globalMods, setGlobalMods] = useState({ freeBuildCity: null, doubleSynergy: false, incomeMult: {}, incomeAdd: {}, blockedCities: [] });
+            
+            const [players, setPlayers] = useState([
+                { id: 0, name: '玩家 1', money: 10, location: '香港', hand: null, factories: [], ap: 2, color: 'text-blue-600', isAI: false, lastProfit: 0 },
+                { id: 1, name: 'AI 大亨', money: 10, location: '香港', hand: null, factories: [], ap: 2, color: 'text-red-600', isAI: true, lastProfit: 0 }
+            ]);
+
+            // 新增：當前查看的玩家面板 ID 及 各種彈窗狀態
+            const [viewPlayerId, setViewPlayerId] = useState(0);
+            const [actionHint, setActionHint] = useState('💡 提示：點擊地圖閃爍城市移動。');
+            const [showLeaderboard, setShowLeaderboard] = useState(false);
+            const [showTurnSummary, setShowTurnSummary] = useState(false);
+            const [showEndSummary, setShowEndSummary] = useState(false);
+            const [showIntro, setShowIntro] = useState(true); // 新增：遊戲引導彈窗狀態
+            const [turnStats, setTurnStats] = useState([]); // 存儲每回合的歷史數據
+            const triggerEventRef = useRef(null);
+
+            // 動態計算當前回合的地圖連線 (依據歷史事件自動解鎖)
+            const currentConnections = useMemo(() => {
+                const conn = JSON.parse(JSON.stringify(BASE_CONNECTIONS));
+                DYNAMIC_LINES.forEach(line => {
+                    if (turn >= line.unlockTurn) {
+                        if (!conn[line.from].includes(line.to)) conn[line.from].push(line.to);
+                        if (!conn[line.to].includes(line.from)) conn[line.to].push(line.from);
+                    }
+                });
+                return conn;
+            }, [turn]);
+
+            // 新增：當回合切換時，面板自動切換到行動中的玩家，並重置提示
+            useEffect(() => {
+                if (phase === 'ACTION_P1') {
+                    setViewPlayerId(0);
+                    setActionHint('💡 提示：點擊地圖閃爍城市移動。');
+                }
+                if (phase === 'ACTION_P2') setViewPlayerId(1);
+            }, [phase]);
+
+            const log = (msg, type = 'info') => {
+                // 將新日誌插入到陣列最前面
+                setLogs(prev => [{ msg, type }, ...prev]);
+            };
+
+            // 新增：自動檢查玩家行動力並結束回合
+            useEffect(() => {
+                if (phase === 'ACTION_P1') {
+                    const activePlayer = players[0];
+                    // 判斷是否有特殊的免費建廠機會
+                    const canFreeBuild = activePlayer.hand !== null && 
+                                         activePlayer.location === globalMods.freeBuildCity && 
+                                         CITIES[activePlayer.location].allowed.includes(activePlayer.hand);
+                    
+                    if (activePlayer.ap <= 0 && !canFreeBuild) {
+                        const timer = setTimeout(() => {
+                            log("💡 行動力已耗盡，自動結束行動回合。", "sys");
+                            nextPhase();
+                        }, 1000);
+                        return () => clearTimeout(timer);
+                    }
+                }
+            }, [phase, players, globalMods.freeBuildCity]);
+
+            const getPlayerProfit = (player, mods = globalMods) => {
+                let total = 0; const counts = {};
+                player.factories.forEach(f => { counts[f.industry] = (counts[f.industry] || 0) + 1; });
+                player.factories.forEach(f => {
+                    let base = PROFIT_MATRIX[f.industry]?.[f.city] || 0;
+                    if (mods.incomeMult[f.industry] !== undefined) base = Math.floor(base * mods.incomeMult[f.industry]);
+                    if (mods.incomeAdd[f.industry] !== undefined) base += mods.incomeAdd[f.industry];
+                    let synergy = 0;
+                    if (counts[f.industry] > 1) synergy = INDUSTRIES[f.industry].synergy * (mods.doubleSynergy ? 2 : 1);
+                    total += (base + synergy);
+                });
+                return total;
+            };
+
+            const nextPhase = () => {
+                if (phase === 'EVENT') {
+                    setPhase('PROFIT');
+                    let newPlayers = [...players];
+                    newPlayers.forEach(p => {
+                        const profit = getPlayerProfit(p);
+                        p.lastProfit = profit; // 記錄本回合淨利潤
+                        p.money += profit;
+                        if (profit > 0) log(`💰 ${p.name} 獲得利潤 ${profit} 萬。`, 'success');
+                        else if (profit < 0) log(`📉 ${p.name} 虧損 ${Math.abs(profit)} 萬！`, 'error');
+                        else log(`⚖️ ${p.name} 本回合利潤為 0。`, 'sys');
+                    });
+                    setPlayers(newPlayers);
+                    setTimeout(() => {
+                        setPlayers(prev => prev.map(p => ({ ...p, ap: maxAP }))); 
+                        setPhase('ACTION_P1');
+                        log(`🕹️ 等待 玩家 1 行動...`, 'sys');
+                    }, 1000);
+                } 
+                else if (phase === 'ACTION_P1') {
+                    setPhase('ACTION_P2');
+                    log(`🤖 等待 AI 大亨 行動...`, 'sys');
+                }
+                else if (phase === 'ACTION_P2') {
+                    // 記錄回合結算歷史數據
+                    setTurnStats(prev => [...prev, {
+                        turn: turn,
+                        p1: { money: players[0].money, factories: players[0].factories.length, profit: players[0].lastProfit || 0 },
+                        p2: { money: players[1].money, factories: players[1].factories.length, profit: players[1].lastProfit || 0 }
+                    }]);
+
+                    if (turn >= 10) { 
+                        setPhase('END'); 
+                        log(`🏆 遊戲結束！`, 'sys'); 
+                        setShowEndSummary(true);
+                    } 
+                    else {
+                        setShowTurnSummary(true);
+                    }
+                }
+            };
+
+            // 關閉回合結算並進入下一回合
+            const closeTurnSummary = () => {
+                setShowTurnSummary(false);
+                setTurn(t => t + 1); 
+                setPhase('EVENT');
+                log(`📅 進入第 ${turn + 1} 回合。歷史事件觸發！`, 'sys');
+            };
+
+            const closeEventPopup = () => {
+                if (eventTimerRef.current) clearTimeout(eventTimerRef.current);
+                setShowEventPopup(false);
+                triggerEvent(); // 彈窗關閉後執行事件結算邏輯
+            };
+
+            const triggerEvent = () => {
+                const ev = EVENTS[turn - 1];
+                log(`📜 歷史事件: ${ev.title} (${ev.year})`, 'event');
+                
+                let nMods = { ...globalMods }, nMods_price = { ...cityPriceModifiers }, nUnlocked = [...unlockedInd], nMaxAP = maxAP, mBonus = 0;
+                const ef = ev.effects;
+                
+                if (ef.landPriceChange) {
+                    if (ef.landPriceChange.default !== undefined) {
+                        Object.keys(nMods_price).forEach(c => {
+                            if (!ef.landPriceChange.exceptions.includes(c)) nMods_price[c] += ef.landPriceChange.default;
+                        });
+                    } else {
+                        Object.keys(ef.landPriceChange).forEach(c => nMods_price[c] += ef.landPriceChange[c]);
+                    }
+                }
+                if (ef.unlockedIndustries) nUnlocked = [...new Set([...nUnlocked, ...ef.unlockedIndustries])];
+                if (ef.freeBuildCity) nMods.freeBuildCity = ef.freeBuildCity;
+                if (ef.incomeModifier) ef.incomeModifier.target.forEach(ind => nMods.incomeMult[ind] = ef.incomeModifier.mult);
+                if (ef.incomeModifierFlat) ef.incomeModifierFlat.target.forEach(ind => nMods.incomeAdd[ind] = (nMods.incomeAdd[ind] || 0) + ef.incomeModifierFlat.add);
+                if (ef.doubleSynergy) nMods.doubleSynergy = true;
+                if (ef.addMoney) mBonus = ef.addMoney;
+                if (ef.addMaxAP) nMaxAP += ef.addMaxAP;
+                if (ef.blockCity) nMods.blockedCities = ef.blockCity;
+
+                setGlobalMods(nMods); setCityPriceModifiers(nMods_price); setUnlockedInd(nUnlocked); setMaxAP(nMaxAP);
+                if (mBonus > 0) {
+                    setPlayers(prev => prev.map(p => ({ ...p, money: p.money + mBonus })));
+                    log(`💵 所有玩家獲得資金 ${mBonus} 萬！`, 'success');
+                }
+                nextPhase();
+            };
+
+            triggerEventRef.current = triggerEvent;
+
+            // 自動觸發事件彈窗
+            useEffect(() => {
+                if (phase === 'EVENT' && !showIntro) {
+                    setShowEventPopup(true);
+                    if (eventTimerRef.current) clearTimeout(eventTimerRef.current);
+                    eventTimerRef.current = setTimeout(() => {
+                        setShowEventPopup(false);
+                        if (triggerEventRef.current) triggerEventRef.current();
+                    }, 2000);
+                }
+                return () => {
+                    if (eventTimerRef.current) clearTimeout(eventTimerRef.current);
+                };
+            }, [turn, phase, showIntro]);
+
+            const handleRestartGame = () => {
+                setTurn(1);
+                setPhase('EVENT');
+                setMaxAP(2);
+                setUnlockedInd([]);
+                setDeckPool([...INITIAL_DECK]);
+                setLogs([{ msg: "遊戲重新開始！1977年大灣區建設啟動。", type: "sys" }]);
+                setShowEventPopup(false);
+                setShowTurnSummary(false);
+                setShowEndSummary(false);
+                setShowLeaderboard(false);
+                setShowIntro(true); // 重新開始時再次顯示引導彈窗
+                setTurnStats([]);
+                setCityPriceModifiers(() => {
+                    const init = {}; Object.keys(CITIES).forEach(c => init[c] = 0); return init;
+                });
+                setGlobalMods({ freeBuildCity: null, doubleSynergy: false, incomeMult: {}, incomeAdd: {}, blockedCities: [] });
+                setPlayers([
+                    { id: 0, name: '玩家 1', money: 10, location: '香港', hand: null, factories: [], ap: 2, color: 'text-blue-600', isAI: false, lastProfit: 0 },
+                    { id: 1, name: 'AI 大亨', money: 10, location: '香港', hand: null, factories: [], ap: 2, color: 'text-red-600', isAI: true, lastProfit: 0 }
+                ]);
+                setViewPlayerId(0);
+                setActionHint('💡 提示：點擊地圖閃爍城市移動。');
+            };
+
+            // 執行行動的純函數封裝，供人和AI調用
+            const executeMove = (playerId, cityId) => {
+                setPlayers(prev => prev.map(p => {
+                    if (p.id === playerId) {
+                        log(`🏃‍♂️ ${p.name} 移動至 ${cityId}`, 'success');
+                        return { ...p, location: cityId, ap: p.ap - 1 };
+                    }
+                    return p;
+                }));
+            };
+
+            const executeDraw = (playerId) => {
+                // 從 deckPool 中過濾出當前已解鎖的產業圖紙
+                const availableCards = deckPool.filter(c => unlockedInd.includes(c));
+                if (availableCards.length === 0) {
+                    log("❌ 牌庫中目前沒有已解鎖的圖紙！", 'error');
+                    return false;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                const drawnCard = availableCards[randomIndex];
+                
+                // 從池中移除一張
+                setDeckPool(prev => {
+                    const idx = prev.indexOf(drawnCard);
+                    if (idx > -1) {
+                        const newPool = [...prev]; newPool.splice(idx, 1); return newPool;
+                    }
+                    return prev;
+                });
+
+                setPlayers(prev => prev.map(p => {
+                    if (p.id === playerId) {
+                        log(`🃏 ${p.name} 抽取了 [${drawnCard}] 圖紙。`, 'success');
+                        return { ...p, hand: drawnCard, ap: p.ap - 1 };
+                    }
+                    return p;
+                }));
+                return true;
+            };
+
+            const executeBuild = (playerId) => {
+                setPlayers(prev => {
+                    let cost = 0, indName = '', cityId = '', isFreeAp = false;
+                    const player = prev.find(p => p.id === playerId);
+                    indName = player.hand; 
+                    cityId = player.location;
+                    
+                    const c = CITIES[cityId];
+                    const builtCount = prev[0].factories.filter(f=>f.city===cityId).length + prev[1].factories.filter(f=>f.city===cityId).length;
+                    
+                    if (builtCount >= c.basePrices.length) return prev; // 防禦性攔截
+                    
+                    const currentPrice = Math.max(0, c.basePrices[builtCount] + cityPriceModifiers[cityId]);
+                    cost = INDUSTRIES[indName].demand * currentPrice;
+                    isFreeAp = globalMods.freeBuildCity === cityId;
+                    
+                    log(`🏭 ${player.name} 在 ${cityId} 建立了 [${indName}] 工廠！(-${cost}萬)`, 'success');
+                    
+                    return prev.map(p => {
+                        if (p.id === playerId) {
+                            return { ...p, money: p.money - cost, ap: isFreeAp ? p.ap : p.ap - 1, hand: null, factories: [...p.factories, { city: cityId, industry: indName }] };
+                        }
+                        return p;
+                    });
+                });
+            };
+
+            // 玩家按鈕綁定
+            const handlePlayerMove = (cityId) => {
+                const p = players[0];
+                if (phase !== 'ACTION_P1') return;
+                if (p.location === cityId) return log(`您已經在 ${cityId}。`, 'info');
+                if (p.ap < 1) return log("❌ 行動力不足！", 'error');
+                if (globalMods.blockedCities.includes(cityId)) return log(`❌ ${cityId} 封鎖中！`, 'error');
+                if (!currentConnections[p.location].includes(cityId)) return log(`❌ 只能移動到相鄰城市！`, 'error');
+                executeMove(0, cityId);
+            };
+
+            const handlePlayerDraw = () => {
+                const p = players[0];
+                if (p.ap < 1) return log("❌ 行動力不足！", 'error');
+                if (p.location !== '香港') return log("❌ 必須在香港抽卡！", 'error');
+                if (p.hand) return log("❌ 手中已有圖紙！", 'error');
+                executeDraw(0);
+            };
+
+            const handlePlayerBuild = () => {
+                const p = players[0];
+                if (!p.hand) return log("❌ 沒有圖紙！", 'error');
+                if (!unlockedInd.includes(p.hand)) return log(`❌ 【${p.hand}】 尚未解鎖！`, 'error');
+                
+                const c = CITIES[p.location];
+                if (!c.allowed.includes(p.hand)) return log(`❌ ${p.location} 不允許建設 【${p.hand}】！`, 'error');
+                
+                const builtCount = players[0].factories.filter(f=>f.city===p.location).length + players[1].factories.filter(f=>f.city===p.location).length;
+                if (builtCount >= c.basePrices.length) return log(`❌ ${p.location} 的建設空間已滿！`, 'error');
+                
+                const currentPrice = Math.max(0, c.basePrices[builtCount] + cityPriceModifiers[p.location]);
+                const cost = INDUSTRIES[p.hand].demand * currentPrice;
+
+                if (globalMods.freeBuildCity !== p.location && p.ap < 1) return log("❌ 行動力不足！", 'error');
+                if (p.money < cost) return log(`❌ 資金不足！需要 ${cost} 萬。`, 'error');
+                
+                executeBuild(0);
+            };
+
+            // --- AI 邏輯 ---
+            useEffect(() => {
+                if (phase !== 'ACTION_P2') return;
+                const ai = players[1];
+                if (ai.ap <= 0) {
+                    const timer = setTimeout(nextPhase, 1000);
+                    return () => clearTimeout(timer);
+                }
+
+                const aiTimer = setTimeout(() => {
+                    // AI 決策邏輯
+                    if (!ai.hand) {
+                        // 1. 沒牌，目標去香港抽卡
+                        if (ai.location === '香港') {
+                            const success = executeDraw(1);
+                            if (!success) {
+                                // 牌庫沒解鎖的卡，AI 隨機亂走浪費 AP
+                                const neighbors = currentConnections[ai.location].filter(c => !globalMods.blockedCities.includes(c));
+                                executeMove(1, neighbors[Math.floor(Math.random() * neighbors.length)]);
+                            }
+                        } else {
+                            // 尋路去香港
+                            const nextStep = getNextStepToTarget(ai.location, '香港', globalMods.blockedCities, currentConnections);
+                            if (nextStep !== ai.location) executeMove(1, nextStep);
+                            else executeMove(1, ai.location); // 卡死則不扣ap，這裡要防止死循環，直接跳過回合
+                        }
+                    } else {
+                        // 2. 有牌，找利潤最高的地方建廠
+                        let bestCity = null; let maxProfit = -999;
+                        const indCostMultiplier = INDUSTRIES[ai.hand].demand;
+
+                        Object.values(CITIES).forEach(c => {
+                            const builtCount = players[0].factories.filter(f=>f.city===c.id).length + players[1].factories.filter(f=>f.city===c.id).length;
+                            if (builtCount >= c.basePrices.length) return; // 該城市已無建設空間
+
+                            // 城市允許 + 錢夠 + 沒被封鎖
+                            const currentPrice = Math.max(0, c.basePrices[builtCount] + cityPriceModifiers[c.id]);
+
+                            if (c.allowed.includes(ai.hand) && !globalMods.blockedCities.includes(c.id) && ai.money >= indCostMultiplier * currentPrice) {
+                                // 計算利潤
+                                let baseProf = PROFIT_MATRIX[ai.hand]?.[c.id] || 0;
+                                if (globalMods.incomeMult[ai.hand] !== undefined) baseProf *= globalMods.incomeMult[ai.hand];
+                                if (globalMods.incomeAdd[ai.hand] !== undefined) baseProf += globalMods.incomeAdd[ai.hand];
+                                
+                                if (baseProf > maxProfit) { maxProfit = baseProf; bestCity = c.id; }
+                            }
+                        });
+
+                        if (bestCity) {
+                            if (ai.location === bestCity) executeBuild(1);
+                            else {
+                                const nextStep = getNextStepToTarget(ai.location, bestCity, globalMods.blockedCities, currentConnections);
+                                if (nextStep !== ai.location) executeMove(1, nextStep);
+                                else {
+                                     // 卡死，隨機走
+                                     const neighbors = currentConnections[ai.location].filter(c => !globalMods.blockedCities.includes(c));
+                                     if(neighbors.length > 0) executeMove(1, neighbors[0]);
+                                     else setPlayers(prev => prev.map(p => p.id===1 ? {...p, ap:0} : p)); // 真卡死，結束
+                                }
+                            }
+                        } else {
+                            // 買不起或者沒有合適城市（通常是卡在沒錢），隨機遊蕩或結束
+                            const neighbors = currentConnections[ai.location].filter(c => !globalMods.blockedCities.includes(c));
+                            if(neighbors.length > 0) executeMove(1, neighbors[Math.floor(Math.random() * neighbors.length)]);
+                            else setPlayers(prev => prev.map(p => p.id===1 ? {...p, ap:0} : p));
+                        }
+                    }
+                }, 1000);
+
+                return () => clearTimeout(aiTimer);
+            }, [phase, players, currentConnections]);
+
+            // --- 渲染 ---
+            const activePlayer = phase === 'ACTION_P1' ? players[0] : (phase === 'ACTION_P2' ? players[1] : null);
+
+            // 根據設置計算動態佈局 Class
+            let layoutClasses = {
+                container: "flex-col lg:flex-row",
+                leftPanel: "w-full lg:w-1/3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]",
+                rightPanel: "w-full lg:w-2/3",
+                mapAspect: "aspect-[4/3] md:aspect-[16/9] lg:aspect-[4/3]"
+            };
+            if (layoutMode === 'mobile') {
+                layoutClasses = { container: "flex-col", leftPanel: "w-full", rightPanel: "w-full", mapAspect: "aspect-[4/3]" };
+            } else if (layoutMode === 'tablet') {
+                layoutClasses = { container: "flex-col", leftPanel: "w-full", rightPanel: "w-full", mapAspect: "aspect-[16/9]" };
+            } else if (layoutMode === 'desktop') {
+                layoutClasses = { container: "flex-row", leftPanel: "w-1/3 sticky top-4 max-h-[calc(100vh-2rem)]", rightPanel: "w-2/3", mapAspect: "aspect-[4/3]" };
+            }
+
+            return (
+                <div className={`w-full min-h-screen p-2 md:p-4 flex gap-4 max-w-7xl mx-auto relative ${layoutClasses.container}`}>
+                    
+                    {/* 顯示設置選單 */}
+                    <div className="fixed top-4 right-4 z-50">
+                        <button onClick={() => setSettingsOpen(!settingsOpen)} className="pixel-btn p-2 bg-gray-200 text-xl border-4 border-black">
+                            ⚙️
+                        </button>
+                        {settingsOpen && (
+                            <div className="absolute top-12 right-0 pixel-box p-3 w-56 text-sm flex flex-col gap-3 z-50 shadow-2xl">
+                                <div>
+                                    <h4 className="font-bold border-b-2 border-black pb-1 mb-2 text-blue-800">🖥️ 佈局模式</h4>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="layout" checked={layoutMode==='auto'} onChange={() => setLayoutMode('auto')} className="w-4 h-4 accent-black" /> 自動適配 (Auto)</label>
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="layout" checked={layoutMode==='mobile'} onChange={() => setLayoutMode('mobile')} className="w-4 h-4 accent-black" /> 手機版 (強制豎排)</label>
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="layout" checked={layoutMode==='tablet'} onChange={() => setLayoutMode('tablet')} className="w-4 h-4 accent-black" /> iPad版 (寬屏豎排)</label>
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="layout" checked={layoutMode==='desktop'} onChange={() => setLayoutMode('desktop')} className="w-4 h-4 accent-black" /> 電腦版 (強制並排)</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold border-b-2 border-black pb-1 mb-2 text-blue-800">👁️ 顯示設置</h4>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={showPreviewIcons} onChange={e => setShowPreviewIcons(e.target.checked)} className="w-4 h-4 accent-black" />
+                                        <span>地圖產業圖標預覽</span>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 左側：狀態與操作區 */}
+                    <div className={`flex flex-col gap-3 overflow-y-auto ${layoutClasses.leftPanel}`}>
+                        <div className="pixel-panel p-3 md:p-4 flex flex-col gap-2 relative">
+                            <div className="flex items-center gap-3 border-b-4 border-black pb-2 mb-1">
+                                <h1 className="text-xl md:text-2xl font-black tracking-tight text-blue-900 drop-shadow-[2px_2px_0_rgba(0,0,0,0.1)] shrink-0">大灣區大亨</h1>
+                                <div className="bg-black text-yellow-400 px-3 py-1 text-sm md:text-base font-bold whitespace-nowrap border-2 border-black rounded shadow-[inset_0_-2px_0_rgba(0,0,0,0.2)]">
+                                    {turn} / 10
+                                </div>
+                            </div>
+                            <div className="bg-yellow-100 border-2 border-yellow-600 p-2 text-sm font-bold mt-2">
+                                階段：
+                                {phase === 'EVENT' && '📜 歷史事件'}
+                                {phase === 'PROFIT' && '💰 結算利潤'}
+                                {phase === 'ACTION_P1' && <span className="text-blue-600">🕹️ 玩家 1 行動中</span>}
+                                {phase === 'ACTION_P2' && <span className="text-red-600">🤖 AI 計算中...</span>}
+                                {phase === 'END' && '🏆 結算'}
+                            </div>
+                        </div>
+
+                        {/* 單面板：通過下拉選單切換玩家 */}
+                        {(() => {
+                            const p = players[viewPlayerId];
+                            const isMyTurn = phase === `ACTION_P${p.id+1}`;
+                            return (
+                            <div className={`pixel-box p-3 shrink-0 transition-colors duration-300 ${isMyTurn ? 'bg-yellow-100 border-4 border-yellow-500' : 'bg-gray-100 border-4 border-gray-400 opacity-90'}`}>
+                                <div className="flex justify-between items-center border-b-2 border-gray-300 pb-1 mb-2">
+                                    <div className="flex items-center gap-1 bg-white px-1 border-2 border-black rounded shadow-sm">
+                                        <select 
+                                            className={`font-bold text-xl bg-transparent outline-none cursor-pointer appearance-none ${p.color}`}
+                                            value={viewPlayerId}
+                                            onChange={(e) => setViewPlayerId(Number(e.target.value))}
+                                        >
+                                            {players.map(player => (
+                                                <option key={player.id} value={player.id} className="text-black text-base">
+                                                    {player.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className="text-xs pointer-events-none">▼</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-lg">{p.money} 萬</span>
+                                        <button onClick={() => setShowLeaderboard(true)} className="pixel-btn p-1.5 md:p-2 text-sm md:text-base bg-gray-200 flex items-center justify-center transition-transform hover:scale-110" title="查看排行榜">
+                                            📊
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-800">
+                                    <div>⚡ AP: <span className="font-bold text-lg">{p.ap}/{maxAP}</span></div>
+                                    <div>📍 位置: <span className="font-bold text-lg">{p.location}</span></div>
+                                </div>
+                                <div className="mt-2 pt-2 border-t-2 border-gray-300">
+                                    <div className="text-xs text-gray-600 mb-1">手中圖紙卡：</div>
+                                    {p.hand ? (
+                                        <div className={`inline-flex items-center gap-1 px-2 py-1 border-2 border-black text-white text-sm font-bold ${INDUSTRIES[p.hand].color}`}>
+                                            {INDUSTRIES[p.hand].icon} {p.hand}
+                                        </div>
+                                    ) : <span className="text-gray-500 text-xs">(無圖紙)</span>}
+                                </div>
+                            </div>
+                        )})()}
+
+                        <div className="pixel-panel p-3 md:p-4 flex-grow flex flex-col gap-3 min-h-[200px] overflow-y-auto">
+                            <h3 className="font-bold border-b-2 border-black pb-1 shrink-0">操作面板</h3>
+                            
+                            {phase === 'EVENT' && (
+                                <button className="pixel-btn py-4 animate-pulse text-lg shrink-0 mt-auto bg-gray-300" disabled>📜 正在宣佈歷史事件...</button>
+                            )}
+
+                            {phase === 'ACTION_P1' && (
+                                <div className="flex flex-col gap-2 h-full justify-end mt-auto">
+                                    <div className="text-xs md:text-sm bg-white p-2 border-2 border-dashed border-gray-400 text-gray-700 shrink-0 min-h-[44px] flex items-center justify-center text-center transition-all">
+                                        {actionHint}
+                                    </div>
+                                    <div className="flex flex-row gap-1.5 md:gap-2 w-full">
+                                        <button 
+                                            className="pixel-btn py-2 md:py-3 flex-1 text-xs md:text-sm whitespace-nowrap px-1" 
+                                            onClick={handlePlayerDraw} 
+                                            disabled={players[0].location !== '香港' || players[0].ap < 1 || players[0].hand}
+                                            title="需身處香港，消耗 1 AP"
+                                            onMouseEnter={() => setActionHint('🃏 抽卡：需身處【香港】，耗 1 AP')}
+                                            onMouseLeave={() => setActionHint('💡 提示：點擊地圖閃爍城市移動。')}
+                                        >
+                                            🃏 抽卡
+                                        </button>
+                                        <button 
+                                            className="pixel-btn py-2 md:py-3 flex-1 text-xs md:text-sm whitespace-nowrap px-1 bg-green-500 hover:bg-green-400" 
+                                            onClick={handlePlayerBuild} 
+                                            disabled={!players[0].hand || (players[0].ap < 1 && globalMods.freeBuildCity !== players[0].location)}
+                                            title="需持有圖紙，消耗 1 AP 及資金"
+                                            onMouseEnter={() => setActionHint('🏭 建廠：需持有圖紙，耗 1 AP 及資金')}
+                                            onMouseLeave={() => setActionHint('💡 提示：點擊地圖閃爍城市移動。')}
+                                        >
+                                            🏭 建廠
+                                        </button>
+                                        <button 
+                                            className="pixel-btn py-2 md:py-3 flex-1 text-xs md:text-sm whitespace-nowrap px-1 bg-red-400 hover:bg-red-300" 
+                                            onClick={nextPhase}
+                                            title="結束當前行動回合"
+                                            onMouseEnter={() => setActionHint('⏭️ 結束：結束行動回合，輪到對手')}
+                                            onMouseLeave={() => setActionHint('💡 提示：點擊地圖閃爍城市移動。')}
+                                        >
+                                            ⏭️ 結束
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {phase === 'ACTION_P2' && (
+                                <div className="text-center py-8 font-bold text-red-600 animate-pulse mt-auto">🤖 AI 正在思考...</div>
+                            )}
+                            {phase === 'END' && (
+                                <div className="bg-yellow-300 p-4 border-4 border-black text-center font-bold h-full flex flex-col justify-center mt-auto">
+                                    <div className="text-2xl mb-2">結束！</div>
+                                    <div className="text-xl text-red-600 mb-4">
+                                        {players[0].money > players[1].money ? '您獲勝了！' : (players[1].money > players[0].money ? 'AI 獲勝！' : '平局！')}
+                                    </div>
+                                    <button className="pixel-btn py-2 px-4 text-sm md:text-base mx-auto w-full max-w-[200px]" onClick={() => setShowEndSummary(true)}>
+                                        📊 查看最終報表
+                                    </button>
+                                    <button className="pixel-btn py-2 px-4 text-sm md:text-base mx-auto w-full max-w-[200px] mt-2" onClick={handleRestartGame}>
+                                        🔄 再玩一次
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 右側：地圖與日誌 */}
+                    <div className={`flex flex-col gap-4 ${layoutClasses.rightPanel}`}>
+                        <div className={`relative w-full map-container pixel-box overflow-hidden border-4 md:border-8 border-gray-800 shadow-lg shrink-0 lg:shrink ${layoutClasses.mapAspect}`}>
+                            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+                                {Object.entries(BASE_CONNECTIONS).map(([from, tos]) => tos.map(to => {
+                                    if (from > to) return null;
+                                    const p1 = CITIES[from].pos, p2 = CITIES[to].pos;
+                                    return <line key={`base-${from}-${to}`} x1={`${p1.x}%`} y1={`${p1.y}%`} x2={`${p2.x}%`} y2={`${p2.y}%`} stroke="rgba(255,255,255,0.7)" strokeWidth="3" strokeDasharray="6 6" />
+                                }))}
+                                {DYNAMIC_LINES.map((line, idx) => {
+                                    if (turn < line.unlockTurn) return null;
+                                    const p1 = CITIES[line.from].pos, p2 = CITIES[line.to].pos;
+                                    return <line key={`dyn-${idx}`} x1={`${p1.x}%`} y1={`${p1.y}%`} x2={`${p2.x}%`} y2={`${p2.y}%`} stroke={line.stroke} strokeWidth="4" strokeDasharray="8 6" className="drop-shadow-md animate-pulse" />
+                                })}
+                            </svg>
+
+                            {Object.values(CITIES).map(c => {
+                                const p1Factories = players[0].factories.filter(f => f.city === c.id);
+                                const p2Factories = players[1].factories.filter(f => f.city === c.id);
+                                const p1Count = p1Factories.length;
+                                const p2Count = p2Factories.length;
+                                const totalBuilt = p1Count + p2Count;
+                                
+                                const hasP1 = players[0].location === c.id, hasP2 = players[1].location === c.id;
+                                const isBlocked = globalMods.blockedCities.includes(c.id);
+                                const isMovable = phase === 'ACTION_P1' && currentConnections[players[0].location].includes(c.id);
+
+                                return (
+                                    <div key={c.id} 
+                                        className={`absolute flex flex-col items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110 z-10 ${isMovable ? 'highlight-city' : 'cursor-pointer'}`}
+                                        style={{ left: `${c.pos.x}%`, top: `${c.pos.y}%` }}
+                                        onClick={() => handlePlayerMove(c.id)}
+                                    >
+                                        <div className="absolute -top-5 md:-top-6 flex gap-1 font-bold text-lg md:text-xl z-30">
+                                            {hasP1 && <span className="drop-shadow-md text-blue-600 animate-bounce">▼</span>}
+                                            {hasP2 && <span className="drop-shadow-md text-red-600 animate-bounce">▼</span>}
+                                        </div>
+                                        
+                                        <div className={`pixel-box p-1 md:p-1.5 min-w-[3.5rem] md:min-w-[4.5rem] flex flex-col items-center text-center text-white leading-tight ${isBlocked ? 'bg-gray-800' : c.color} ${isMovable ? 'border-yellow-400 border-4' : ''}`}>
+                                            <span className="font-bold text-xs md:text-sm whitespace-nowrap">{isBlocked ? '封城' : c.id}</span>
+                                            
+                                            {showPreviewIcons && (
+                                                <div className="flex flex-wrap justify-center gap-[2px] mt-1 max-w-[50px] md:max-w-[60px]">
+                                                    {c.allowed.map(ind => {
+                                                        const isUnlocked = unlockedInd.includes(ind);
+                                                        return (
+                                                            <span key={ind} title={`${ind}${isUnlocked?'':'(未解鎖)'}`} className={`text-[8px] md:text-[10px] bg-white border border-black rounded-[2px] p-[1px] leading-none text-black ${isUnlocked ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                                                                {INDUSTRIES[ind].icon}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* 地皮與地價可視化 */}
+                                        <div className="flex gap-[2px] mt-1 bg-gray-200 p-[2px] border-2 border-black rounded shadow-md cursor-help">
+                                            {c.basePrices.map((bp, idx) => {
+                                                const isP1 = idx < p1Count;
+                                                const isP2 = !isP1 && idx < totalBuilt;
+                                                const currentPlotPrice = Math.max(0, bp + cityPriceModifiers[c.id]);
+                                                
+                                                let bgCol = 'bg-white text-black';
+                                                let displayContent = currentPlotPrice;
+                                                let titleText = `空地 (當前建廠地價: $${currentPlotPrice})`;
+
+                                                if (isP1) {
+                                                    bgCol = 'bg-blue-600 text-white';
+                                                    const factory = p1Factories[idx];
+                                                    displayContent = INDUSTRIES[factory.industry].icon;
+                                                    titleText = `玩家 1 的 ${factory.industry} 工廠`;
+                                                } else if (isP2) {
+                                                    bgCol = 'bg-red-600 text-white';
+                                                    const factory = p2Factories[idx - p1Count];
+                                                    displayContent = INDUSTRIES[factory.industry].icon;
+                                                    titleText = `AI 的 ${factory.industry} 工廠`;
+                                                }
+
+                                                return (
+                                                    <div key={idx} 
+                                                        className={`w-4 h-4 md:w-5 md:h-5 text-[8px] md:text-[10px] flex items-center justify-center font-bold border border-gray-600 ${bgCol}`} 
+                                                        title={titleText}
+                                                    >
+                                                        {displayContent}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-4 h-auto md:h-[300px] mb-4 shrink-0">
+                            <div className="w-full md:w-1/2 pixel-box bg-[#f8fafc] flex flex-col relative h-[250px] md:h-full">
+                                <div className="w-full h-8 bg-red-700 flex items-center justify-center text-white font-bold border-b-4 border-black shrink-0">
+                                    {EVENTS[turn-1]?.title} ({EVENTS[turn-1]?.year})
+                                </div>
+                                <div className="p-4 text-sm overflow-y-auto leading-relaxed flex-grow">
+                                    <p className="font-bold mb-1 text-blue-800">【當前開放產業】</p>
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                        {unlockedInd.length > 0 ? unlockedInd.map(ind => (
+                                            <span key={ind} className={`text-[10px] px-1 text-white border border-black ${INDUSTRIES[ind].color}`}>{ind}</span>
+                                        )) : <span className="text-xs text-gray-500">尚無產業開放</span>}
+                                    </div>
+                                    <p className="font-bold mb-1">【歷史背景】</p>
+                                    <p className="text-gray-700 text-xs">{EVENTS[turn-1]?.desc}</p>
+                                </div>
+                            </div>
+
+                            <div className="w-full md:w-1/2 pixel-box bg-gray-900 p-3 flex flex-col h-[250px] md:h-full overflow-hidden">
+                                <div className="text-white border-b border-gray-700 pb-1 mb-2 font-bold shrink-0">>_ 系統即時日誌</div>
+                                <div className="flex-grow overflow-y-auto pr-2 text-xs md:text-sm font-mono relative">
+                                    {logs.map((l, i) => {
+                                        let c = 'text-gray-200';
+                                        if (l.type==='error') c='text-red-400 font-bold';
+                                        else if (l.type==='success') c='text-green-300';
+                                        else if (l.type==='event') c='text-yellow-300 font-bold';
+                                        else if (l.type==='sys') c='text-blue-300';
+                                        return <div key={i} className={`mb-1.5 leading-tight ${c}`}>{l.msg}</div>;
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 排行榜彈窗 */}
+                    {showLeaderboard && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+                            <div className="pixel-box bg-[#f8fafc] w-full max-w-sm flex flex-col relative animate-popup shadow-2xl">
+                                <button onClick={() => setShowLeaderboard(false)} className="absolute top-1 right-2 font-bold text-xl text-white hover:text-yellow-300 z-10 px-2 py-1">X</button>
+                                <div className="w-full h-12 bg-purple-700 flex items-center justify-center text-white font-bold border-b-4 border-black text-lg">
+                                    🏆 大灣區富豪排行榜
+                                </div>
+                                <div className="p-4 md:p-6 text-sm md:text-base text-gray-800 flex flex-col gap-3">
+                                    {[...players].sort((a,b) => b.money - a.money).map((p, index) => (
+                                        <div key={p.id} className="flex items-center gap-3 p-3 border-2 border-black bg-white shadow-sm">
+                                            <div className="text-3xl">{index === 0 ? '🥇' : '🥈'}</div>
+                                            <div className="flex-grow">
+                                                <div className={`font-bold text-lg ${p.color}`}>{p.name}</div>
+                                                <div className="text-xs text-gray-600">擁有工廠: {p.factories.length} 座</div>
+                                            </div>
+                                            <div className="font-bold text-xl text-green-700">💰 {p.money} 萬</div>
+                                        </div>
+                                    ))}
+                                    <button className="pixel-btn py-2 mt-2 w-full text-base bg-gray-300" onClick={() => setShowLeaderboard(false)}>關閉</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 回合結算彈窗 */}
+                    {showTurnSummary && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+                            <div className="pixel-box bg-[#f8fafc] w-full max-w-md flex flex-col relative animate-popup shadow-2xl">
+                                <div className="w-full h-12 bg-blue-700 flex items-center justify-center text-white font-bold border-b-4 border-black text-lg">
+                                    📊 第 {turn} 回合 結算報告
+                                </div>
+                                <div className="p-4 md:p-6 text-sm md:text-base text-gray-800 flex flex-col gap-4">
+                                    {players.map(p => (
+                                        <div key={p.id} className={`p-3 border-2 border-black flex justify-between items-center ${p.id === 0 ? 'bg-blue-100' : 'bg-red-100'}`}>
+                                            <div>
+                                                <div className={`font-bold text-lg ${p.color}`}>{p.name}</div>
+                                                <div className="text-xs text-gray-700 mt-1">累積工廠: {p.factories.length} 座</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xs text-gray-600">本回合淨利潤</div>
+                                                <div className={`font-black text-2xl ${p.lastProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {p.lastProfit >= 0 ? '+' : ''}{p.lastProfit} 萬
+                                                </div>
+                                                <div className="font-bold mt-1 text-sm">當前總資產: 💰 {p.money} 萬</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button className="pixel-btn py-3 mt-2 w-full text-lg" onClick={closeTurnSummary}>進入下一回合 ⏭️</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 遊戲終局總結彈窗 */}
+                    {showEndSummary && (
+                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+                            <div className="pixel-box bg-[#f8fafc] w-full max-w-2xl max-h-[90vh] flex flex-col relative animate-popup shadow-2xl">
+                                <button onClick={() => setShowEndSummary(false)} className="absolute top-1 right-2 font-bold text-xl text-black hover:text-white z-10 px-2 py-1">X</button>
+                                <div className="w-full h-14 bg-yellow-400 flex items-center justify-center text-black font-black border-b-4 border-black text-xl">
+                                    🏆 時代終局：大灣區大亨
+                                </div>
+                                <div className="p-4 md:p-6 overflow-y-auto flex-grow flex flex-col gap-4 custom-scrollbar">
+                                    <div className="text-center font-black text-2xl md:text-3xl text-red-600 mb-2">
+                                        首富：{[...players].sort((a,b) => b.money - a.money)[0].name}！
+                                    </div>
+                                    
+                                    <div className="flex justify-around bg-white border-4 border-black p-4 shadow-[4px_4px_0_rgba(0,0,0,1)] mb-2">
+                                         {[...players].sort((a,b) => b.money - a.money).map((p, index) => (
+                                            <div key={p.id} className="text-center">
+                                                <div className="text-4xl mb-1">{index === 0 ? '🥇' : '🥈'}</div>
+                                                <div className={`font-bold text-lg ${p.color}`}>{p.name}</div>
+                                                <div className="font-black text-xl text-green-700 mt-1">💰 {p.money}萬</div>
+                                                <div className="text-xs text-gray-500 mt-1">建設工廠: {p.factories.length}</div>
+                                            </div>
+                                         ))}
+                                    </div>
+
+                                    <h4 className="font-bold border-l-4 border-blue-600 pl-2 mt-2 text-lg">📈 歷年利潤報表</h4>
+                                    <div className="border-2 border-black bg-white">
+                                        <table className="w-full text-center text-xs md:text-sm">
+                                            <thead className="bg-gray-200 border-b-2 border-black font-bold">
+                                                <tr>
+                                                    <th className="p-2 border-r-2 border-black">回合</th>
+                                                    <th className="p-2 border-r-2 border-black text-blue-700">玩家1 利潤</th>
+                                                    <th className="p-2 text-red-700">AI 利潤</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {turnStats.map(stat => (
+                                                    <tr key={stat.turn} className="border-b border-gray-300 hover:bg-yellow-50 transition-colors">
+                                                        <td className="p-2 border-r-2 border-black bg-gray-100 font-bold">{stat.turn}</td>
+                                                        <td className={`p-2 border-r-2 border-black font-bold ${stat.p1.profit >= 0 ? 'text-green-600':'text-red-600'}`}>{stat.p1.profit >= 0 ? '+' : ''}{stat.p1.profit}</td>
+                                                        <td className={`p-2 font-bold ${stat.p2.profit >= 0 ? 'text-green-600':'text-red-600'}`}>{stat.p2.profit >= 0 ? '+' : ''}{stat.p2.profit}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t-4 border-black bg-gray-200 text-center shrink-0 flex gap-2">
+                                    <button className="pixel-btn flex-1 py-3 text-base bg-white" onClick={() => setShowEndSummary(false)}>返回地圖</button>
+                                    <button className="pixel-btn flex-1 py-3 text-base" onClick={handleRestartGame}>🔄 再玩一次</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 全螢幕事件彈窗 */}
+                    {showEventPopup && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
+                            <div className="pixel-box bg-[#f8fafc] w-11/12 md:w-1/2 max-w-lg flex flex-col relative animate-popup shadow-2xl">
+                                <button onClick={closeEventPopup} className="absolute top-1 right-2 font-bold text-xl text-white hover:text-yellow-300 leading-none z-10 px-2 py-1">X</button>
+                                <div className="w-full h-12 bg-red-700 flex items-center justify-center text-white font-bold border-b-4 border-black text-lg md:text-xl">
+                                    {EVENTS[turn-1]?.title} ({EVENTS[turn-1]?.year})
+                                </div>
+                                <div className="p-5 md:p-6 text-sm md:text-base leading-relaxed text-gray-800">
+                                    <p className="font-bold mb-2 border-b-2 border-gray-300 pb-1 inline-block">【歷史背景】</p>
+                                    <p className="mb-4 text-gray-700">{EVENTS[turn-1]?.desc}</p>
+                                    
+                                    <p className="font-bold text-red-600 mb-1">【新解鎖產業】</p>
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                        {EVENTS[turn-1]?.effects?.unlockedIndustries?.length > 0 ? (
+                                            EVENTS[turn-1].effects.unlockedIndustries.map(ind => (
+                                                <span key={ind} className={`text-xs px-1 text-white border border-black ${INDUSTRIES[ind].color}`}>{ind}</span>
+                                            ))
+                                        ) : <span className="text-sm text-gray-500">無新增解鎖</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 遊戲引導彈窗 */}
+                    {showIntro && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4">
+                            <div className="pixel-box bg-[#f8fafc] w-full max-w-2xl flex flex-col relative animate-popup shadow-2xl">
+                                <div className="w-full h-14 bg-blue-700 flex items-center justify-center text-white font-bold border-b-4 border-black text-xl md:text-2xl tracking-widest">
+                                    🏙️ 歡迎來到《大灣區大亨》
+                                </div>
+                                <div className="p-5 md:p-6 text-sm md:text-base leading-relaxed text-gray-800 flex flex-col gap-3">
+                                    <p className="font-bold text-lg border-b-2 border-gray-300 pb-1 mb-1">【遊戲目標】</p>
+                                    <p>在 1977 年至 2025 年的歷史洪流中扮演商業大亨。透過在粵港澳大灣區各城市建設產業累積財富，成為最終首富！</p>
+                                    
+                                    <p className="font-bold text-lg border-b-2 border-gray-300 pb-1 mt-2 mb-1">【核心規則】</p>
+                                    <ul className="list-disc pl-5 space-y-1.5">
+                                        <li><strong>歷史事件：</strong> 遊戲共 10 回合，每回合會觸發真實的歷史事件，這將改變地價與各行各業的利潤。</li>
+                                        <li><strong>行動點數：</strong> 玩家每回合有 2 AP。可點擊地圖閃爍城市進行<strong>移動 (1 AP)</strong>。</li>
+                                        <li><strong>抽取圖紙：</strong> 必須身處<strong>香港</strong>才能抽取工業圖紙 (1 AP)。</li>
+                                        <li><strong>建設工廠：</strong> 持有圖紙並身處該產業的允許城市時，可花費資金建廠 (1 AP)。</li>
+                                        <li><strong>地皮與收益：</strong> 先買先贏！同一個城市建廠越多地皮越貴；同行業擁有多家工廠將獲得額外的「同業優勢」利潤加成！</li>
+                                    </ul>
+                                    
+                                    <button className="pixel-btn py-3 mt-4 text-lg bg-green-500 hover:bg-green-400 w-full" onClick={() => setShowIntro(false)}>
+                                        🚀 開始我的大亨之路
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
