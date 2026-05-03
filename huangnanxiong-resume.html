@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黄南雄 — 算法工程师 & 全栈开发者</title>
+    <meta name="description" content="黄南雄的个人简历。北京大学软件工程大数据方向，专注于算法优化、大数据分析和全栈开发。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Caveat:wght@400;600&family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+          font-family: 'Huiwen Mincho';
+          src: url('HuiwenMincho.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        @font-face {
+          font-family: 'Xiaolai';
+          src: url('Xiaolai.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+          font-display: swap;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; overflow-x: hidden; }
+        body {
+            font-family: 'Noto Sans SC', 'Inter', sans-serif;
+            color: #1a1a1a;
+            background: #fefcf6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: #F4D758; color: #1a1a1a; }
+        
+        /* 滚动容器 */
+        .scroll-container { width: 100%; }
+        
+        /* 各个部分 */
+        .section {
+            min-height: 100vh;
+            padding: 80px 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease-out;
+        }
+        .section.visible { opacity: 1; transform: translateY(0); }
+        
+        /* 标签 */
+        .section-label {
+            font-family: 'Huiwen Mincho', serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 3rem;
+        }
+        
+        /* ============ HERO — TERMINAL STYLE ============ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #0d1117;
+            position: relative;
+            overflow: hidden;
+            padding: 2rem;
+        }
+        
+        .terminal-window {
+            width: 100%;
+            max-width: 720px;
+            background: #161b22;
+            border-radius: 12px;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 18px;
+            background: #1c2129;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .terminal-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+        }
+        .terminal-dot--red { background: #ff5f57; }
+        .terminal-dot--yellow { background: #febc2e; }
+        .terminal-dot--green { background: #28c840; }
+        .terminal-header-title {
+            flex: 1;
+            text-align: center;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.35);
+            margin-right: 52px;
+        }
+        
+        .terminal-body {
+            padding: 1.8rem 2rem 2.5rem;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: clamp(0.85rem, 1.8vw, 1rem);
+            line-height: 1.8;
+            min-height: 360px;
+        }
+        .terminal-line {
+            opacity: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .terminal-line.visible { opacity: 1; }
+        .terminal-line .cmd { color: #2B7FD8; }
+        .terminal-line .cmd-text { color: #8b949e; }
+        .terminal-line .output { color: #F4D758; }
+        .terminal-line .highlight { color: #28c840; }
+        .terminal-line .link { color: #F7A946; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; cursor: default; }
+        .terminal-line .emoji { color: #fff; }
+        
+        .terminal-cursor {
+            display: inline-block;
+            width: 0.6em;
+            height: 1.15em;
+            background: #F4D758;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 0.8; transform: translateY(0); }
+        }
+        
+        .hero-scroll {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+            animation: fadeUp 0.6s 8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .hero-scroll span {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+        }
+        .hero-scroll-line {
+            width: 1px; height: 40px;
+            background: #F4D758;
+            opacity: 0.4;
+            animation: scrollPulse 2s ease-in-out infinite;
+        }
+        @keyframes scrollPulse {
+            0%, 100% { transform: scaleY(1); opacity: 0.3; }
+            50% { transform: scaleY(1.5); opacity: 0.6; }
+        }
+        
+        /* ============ ABOUT — CHAT DIALOG ============ */
+        .about {
+            padding: 8rem 2rem;
+            background: linear-gradient(180deg, #fffef8 0%, #fefcf0 100%);
+            position: relative;
+        }
+        .about-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .about .section-label { text-align: center; }
+        .about-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            text-align: center;
+            margin-bottom: 4rem;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .about-headline em {
+            font-style: normal;
+            color: #2B7FD8;
+        }
+        
+        .about-chat-layout {
+            display: flex;
+            gap: 4rem;
+            align-items: flex-start;
+        }
+        
+        /* Photo area */
+        .about-photo-area {
+            flex: 0 0 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .about-photo-wrapper {
+            width: 240px; height: 240px;
+            border-radius: 28px;
+            background: #fff;
+            overflow: hidden;
+            border: 4px solid #F4D758;
+            box-shadow: 0 8px 40px rgba(244,215,88,0.2);
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .about-photo-wrapper:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 50px rgba(244,215,88,0.3);
+        }
+        .about-photo-wrapper img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .about-photo-placeholder {
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #ddd;
+            gap: 0.5rem;
+        }
+        .about-photo-placeholder span {
+            font-size: 0.75rem;
+            color: #bbb;
+            font-weight: 400;
+        }
+        .about-photo-name {
+            font-family: 'Huiwen Mincho', serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        /* Chat bubbles */
+        .about-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 1rem 1.4rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(16px) scale(0.95);
+            animation: bubblePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            position: relative;
+        }
+        .chat-bubble--cola {
+            align-self: flex-start;
+            background: #2B7FD8;
+            color: #fff;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 4px 16px rgba(43,127,216,0.2);
+        }
+        .chat-bubble--cola .chat-sender {
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0.7;
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.05em;
+        }
+        .chat-bubble--esther {
+            align-self: flex-end;
+            background: #F4D758;
+            color: #1a1a1a;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 4px 16px rgba(244,215,88,0.25);
+        }
+        .chat-bubble--esther .chat-sender {
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0.6;
+            margin-bottom: 0.3rem;
+            letter-spacing: 0.05em;
+            text-align: right;
+        }
+        
+        @keyframes bubblePop {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .about-chat-layout {
+                flex-direction: column;
+                align-items: center;
+                gap: 2.5rem;
+            }
+            .about-photo-area { flex: none; }
+            .about-photo-wrapper { width: 180px; height: 180px; border-radius: 22px; }
+            .chat-bubble { max-width: 95%; }
+        }
+        
+        /* ============ TIMELINE ============ */
+        .timeline-section {
+            padding: 8rem 2rem;
+            background: #fefcf6;
+            position: relative;
+        }
+        .timeline-section-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .timeline-section .section-label { text-align: center; }
+        .timeline-section-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            text-align: center;
+            margin-bottom: 5rem;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        .timeline-section-headline em {
+            font-style: normal;
+            color: #2B7FD8;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #F4D758, #2B7FD8, #F7A946);
+        }
+        .tl-item {
+            position: relative;
+            margin-bottom: 4rem;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tl-item.is-visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .tl-item::before {
+            content: '';
+            position: absolute;
+            left: -3rem;
+            top: 0.5rem;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 3px solid #F4D758;
+            background: #fefcf6;
+            z-index: 1;
+            transition: all 0.3s;
+        }
+        .tl-item:nth-child(2)::before { border-color: #2B7FD8; }
+        .tl-item:nth-child(3)::before { border-color: #F7A946; }
+        .tl-item:nth-child(4)::before { border-color: #1a1a1a; }
+        
+        .tl-item.is-visible::before {
+            background: #F4D758;
+            box-shadow: 0 0 0 6px rgba(244,215,88,0.2);
+        }
+        .tl-item:nth-child(2).is-visible::before { background: #2B7FD8; box-shadow: 0 0 0 6px rgba(43,127,216,0.2); }
+        .tl-item:nth-child(3).is-visible::before { background: #F7A946; box-shadow: 0 0 0 6px rgba(247,169,70,0.2); }
+        .tl-item:nth-child(4).is-visible::before { background: #1a1a1a; box-shadow: 0 0 0 6px rgba(26,26,26,0.15); }
+        
+        .tl-year {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 900;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            color: #999;
+            margin-bottom: 0.5rem;
+        }
+        .tl-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 0.4rem;
+            line-height: 1.3;
+        }
+        .tl-desc {
+            font-weight: 300;
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        /* ============ OPINIONS — FULLSCREEN SCROLL ============ */
+        .opinions-section {
+            position: relative;
+        }
+        .opinion-slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .opinion-slide:nth-child(1) { background: #F4D758; }
+        .opinion-slide:nth-child(2) { background: #2B7FD8; color: #fff; }
+        .opinion-slide:nth-child(3) { background: #fefcf6; }
+        .opinion-slide:nth-child(4) { background: #F7A946; }
+        .opinion-slide:nth-child(5) { background: #1a2332; color: #fff; }
+        
+        .opinion-number {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 900;
+            font-size: clamp(6rem, 20vw, 16rem);
+            opacity: 0.06;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            line-height: 1;
+            pointer-events: none;
+        }
+        .opinion-slide:nth-child(2) .opinion-number,
+        .opinion-slide:nth-child(5) .opinion-number { opacity: 0.08; color: #fff; }
+        
+        .opinion-text { font-family: 'Huiwen Mincho', serif;
+            font-weight: 900;
+            font-size: clamp(1.8rem, 5.5vw, 3.8rem);
+            max-width: 800px;
+            line-height: 1.35;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(50px) scale(0.95);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .opinion-text.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .opinion-deco {
+            font-family: 'Caveat', cursive;
+            font-size: 1rem;
+            opacity: 0.5;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* ============ PROJECTS — MAGAZINE CARDS ============ */
+        .projects {
+            padding: 10rem 2rem;
+            background: #fefcf6;
+        }
+        .projects-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .projects .section-label { text-align: center; }
+        .projects-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            text-align: center;
+            margin-bottom: 5rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .project-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+        }
+        @media (max-width: 968px) {
+            .project-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .project-card {
+            border-radius: 24px;
+            padding: 3rem;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+        .project-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .project-card:hover {
+            box-shadow: 0 30px 80px rgba(0,0,0,0.12);
+        }
+        .project-card--1 {
+            background: linear-gradient(135deg, #F4D758 0%, #F7A946 100%);
+        }
+        .project-card--1::before {
+            background: linear-gradient(135deg, #f0cc20 0%, #e89520 100%);
+        }
+        .project-card--2 {
+            background: linear-gradient(135deg, #2B7FD8 0%, #1a5fa0 100%);
+            color: #fff;
+        }
+        .project-card--2::before {
+            background: linear-gradient(135deg, #2070c8 0%, #144a80 100%);
+        }
+        .project-card:hover::before { opacity: 1; }
+        
+        .project-card-bg-text {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 900;
+            font-size: clamp(4rem, 10vw, 8rem);
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            opacity: 0.1;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .project-card--2 .project-card-bg-text { opacity: 0.12; }
+        
+        .project-card-content {
+            position: relative;
+            z-index: 1;
+        }
+        .project-card-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .project-card-title {
+            font-weight: 800;
+            font-size: 1.6rem;
+            margin-bottom: 0.6rem;
+            line-height: 1.2;
+        }
+        .project-card-desc {
+            font-weight: 300;
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.85;
+        }
+        .project-card-tag {
+            display: inline-block;
+            margin-top: 1.2rem;
+            padding: 0.3rem 0.9rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .project-card--1 .project-card-tag {
+            background: rgba(26,26,26,0.1);
+            color: #1a1a1a;
+        }
+        .project-card--2 .project-card-tag {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        
+        /* ============ WORKS — VERTICAL SCROLL (modified from horizontal) ============ */
+        .works {
+            padding: 8rem 2rem;
+            background: #f5f2ea;
+            overflow: hidden;
+        }
+        .works-top {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            margin-bottom: 4rem;
+        }
+        .works .section-label { padding: 0 2rem; max-width: 1100px; margin: 0 auto 1rem; }
+        .works-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            letter-spacing: -0.02em;
+        }
+        
+        .works-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding: 0 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .work-item {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2.5rem;
+            display: flex;
+            gap: 2rem;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .work-item:hover { transform: translateX(8px); }
+        
+        .work-item-number {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 900;
+            font-size: clamp(3rem, 7vw, 4.5rem);
+            line-height: 1;
+            margin-bottom: 0.3rem;
+            background: linear-gradient(135deg, #F4D758, #F7A946);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .work-item-content { flex: 1; }
+        .work-item-title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+        .work-item-platform {
+            font-size: 0.8rem;
+            color: #999;
+            font-weight: 400;
+        }
+        
+        /* ============ CONTACT ============ */
+        .contact {
+            background: #1a2332;
+            color: #fff;
+            padding: 8rem 2rem;
+            text-align: center;
+        }
+        .contact-inner {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .contact-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        .contact-sub {
+            font-family: 'Caveat', cursive;
+            font-size: 1.3rem;
+            opacity: 0.5;
+            margin-bottom: 3rem;
+        }
+        .contact-links {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 4rem;
+        }
+        .contact-link {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 400;
+            opacity: 0.7;
+            transition: all 0.3s;
+            position: relative;
+            padding-bottom: 4px;
+        }
+        .contact-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 0; height: 1px;
+            background: #F4D758;
+            transition: width 0.3s;
+        }
+        .contact-link:hover { opacity: 1; }
+        .contact-link:hover::after { width: 100%; }
+        
+        .contact-quote {
+            font-weight: 300;
+            font-size: 0.9rem;
+            opacity: 0.35;
+            line-height: 1.8;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #1a2332;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 2rem;
+            text-align: center;
+        }
+        .footer p {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.2);
+            letter-spacing: 0.1em;
+        }
+        
+        /* ============ PARALLAX DECORATION ============ */
+        .parallax-dot {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+        
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 768px) {
+            .project-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .project-card { min-height: 320px; padding: 2rem; }
+            .timeline { padding-left: 2.5rem; }
+            .timeline::before { left: 4px; }
+            .tl-item::before { left: -2.5rem; width: 10px; height: 10px; }
+            .opinion-text { font-family: 'Huiwen Mincho', serif; font-size: clamp(1.5rem, 6vw, 2.5rem); }
+            .work-item { flex: 0 0 280px; }
+            .contact-links { gap: 1.5rem; }
+            .terminal-window { border-radius: 8px; }
+            .terminal-body { padding: 1.2rem 1rem 2rem; font-size: 0.8rem; min-height: 280px; }
+            .terminal-header-title { display: none; }
+        }
+        
+        /* ============ ANIMATIONS ============ */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fade-up.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .fade-up-delay-1 { transition-delay: 0.1s; }
+        .fade-up-delay-2 { transition-delay: 0.2s; }
+        .fade-up-delay-3 { transition-delay: 0.3s; }
+        
+        /* ============ JOURNEY (MERGED ABOUT + TIMELINE) ============ */
+        .journey-section {
+            padding: 80px 2rem;
+            background: #fefcf6;
+        }
+        .journey-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .journey-headline {
+            font-family: 'Huiwen Mincho', serif;
+            font-weight: 800;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #1a1a1a;
+        }
+        .journey-headline em {
+            font-style: normal;
+            color: #2B7FD8;
+        }
+        
+        .journey-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+        @media (max-width: 768px) {
+            .journey-grid { grid-template-columns: 1fr; }
+        }
+        
+        .journey-chat {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-year {
+            font-size: 0.7rem;
+            color: #2B7FD8;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: 0.05em;
+        }
+        .journey-right {
+            position: sticky;
+            top: 100px;
+        }
+        .journey-photos {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .journey-photos .journey-photo-slot:first-child {
+            grid-column: 1 / -1;
+        }
+        .journey-photo-slot {
+            aspect-ratio: 4/3;
+            border-radius: 12px;
+            background: #f0ebe3;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+            border: 2px dashed #d4c4a8;
+        }
+        .journey-photo-slot:hover {
+            transform: scale(1.02);
+            border-color: #2B7FD8;
+        }
+        .journey-photo-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .journey-photo-placeholder {
+            text-align: center;
+            color: #b8a890;
+            font-size: 24px;
+            line-height: 1.6;
+        }
+        .journey-photo-placeholder small {
+            font-size: 12px;
+            display: block;
+        }
+        .journey-note {
+            padding: 20px;
+            background: rgba(244,215,88,0.15);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #5a4a3a;
+            font-style: italic;
+            border: 1px solid rgba(244,215,88,0.3);
+            outline: none;
+            min-height: 80px;
+        }
+        .journey-note:focus {
+            border-color: #F4D758;
+            background: rgba(244,215,88,0.25);
+        }
+        
+    </style>
+</head>
+<body>
+    
+    <!-- Cursor glow -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+    
+    <!-- ==================== HERO — TERMINAL ==================== -->
+    <section class="hero">
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dot terminal-dot--red"></div>
+                <div class="terminal-dot terminal-dot--yellow"></div>
+                <div class="terminal-dot terminal-dot--green"></div>
+                <div class="terminal-header-title">huangnanxiong@universe ~ %</div>
+            </div>
+            <div class="terminal-body" id="terminalBody">
+                <!-- Lines injected by JS typewriter -->
+            </div>
+        </div>
+        <div class="hero-scroll">
+            <span>Scroll</span>
+            <div class="hero-scroll-line"></div>
+        </div>
+    </section>
+    
+    <!-- ==================== ABOUT — CHAT INTERVIEW ==================== -->
+    <section class="about" id="aboutSection">
+        <div class="about-inner">
+            <p class="section-label fade-up">My Journey</p>
+            <h2 class="about-headline fade-up">从北大到算法<em>探索之路</em></h2>
+            
+            <div class="about-chat-layout">
+                <!-- Photo area -->
+                <div class="about-photo-area">
+                    <div class="about-photo-wrapper">
+                        <div class="about-photo-placeholder">
+                            👤
+                            <span>黄南雄</span>
+                        </div>
+                    </div>
+                    <div class="about-photo-name">黄南雄</div>
+                </div>
+                
+                <!-- Chat area -->
+                <div class="about-chat">
+                    <div class="chat-bubble chat-bubble--cola" style="animation-delay: 0.1s;">
+                        <div class="chat-sender">🎓 记者</div>
+                        <div class="chat-msg">跟大家讲讲你的经历吧？</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--esther" style="animation-delay: 0.2s;">
+                        <div class="chat-sender">黄南雄</div>
+                        <div class="chat-msg">好呀！从北大开始，我读的是软件工程大数据方向 ☺️</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--cola" style="animation-delay: 0.3s;">
+                        <div class="chat-sender">🎓 记者</div>
+                        <div class="chat-tag">2017-2019 · 北京大学 🏫️</div>
+                        <div class="chat-msg">北大期间有什么收获？</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--esther" style="animation-delay: 0.4s;">
+                        <div class="chat-sender">黄南雄</div>
+                        <div class="chat-msg">绩点3.7/4.0，还拿了早稻田大学-康师傅圆梦奖学金和北京大学优秀毕业生！ 📐</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--cola" style="animation-delay: 0.5s;">
+                        <div class="chat-sender">🎓 记者</div>
+                        <div class="chat-tag">2016-2017 · 加州大学圣地亚哥分校 🇺🇸</div>
+                        <div class="chat-msg">听说你去美国交换了？</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--esther" style="animation-delay: 0.6s;">
+                        <div class="chat-sender">黄南雄</div>
+                        <div class="chat-msg">对！拿到北京市教委全额公派奖学金，比例是1/428呢。在UCSD学习，绩点3.0/4.0 🌍</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--cola" style="animation-delay: 0.7s;">
+                        <div class="chat-sender">🎓 记者</div>
+                        <div class="chat-tag">2019-至今 · 华为 & 网易 🏢</div>
+                        <div class="chat-msg">毕业后你在哪里工作？</div>
+                    </div>
+                    <div class="chat-bubble chat-bubble--esther" style="animation-delay: 0.8s;">
+                        <div class="chat-sender">黄南雄</div>
+                        <div class="chat-msg">先在华为做Cloud & AI软件工程师（2019-2022），负责算法、服务端、架构等工作。现在在网易互娱做OA国际版负责人 🚀</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== TIMELINE ==================== -->
+    <section class="timeline-section">
+        <div class="timeline-section-inner">
+            <p class="section-label fade-up">Experience</p>
+            <h2 class="timeline-section-headline fade-up">教育 & 工作经历</h2>
+            
+            <div class="timeline">
+                <div class="tl-item">
+                    <div class="tl-year">2017-2019</div>
+                    <div class="tl-title">北京大学 · 本科 · 软件工程大数据方向</div>
+                    <div class="tl-desc">绩点3.7/4.0。第5届康师傅-早稻田大学圆梦奖学金获得者，北京大学优秀毕业生。主修人工智能、Hadoop平台实践、数据分析等课程。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2016-2017</div>
+                    <div class="tl-title">加州大学圣地亚哥分校 · 交换项目</div>
+                    <div class="tl-desc">绩点3.0/4.0。北京市教委全额公派奖学金（比例1/428）。学习计算机科学与技术，拓宽国际视野。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2013-2017</div>
+                    <div class="tl-title">北京建筑大学 · 本科 · 建筑环境与能源应用工程</div>
+                    <div class="tl-desc">绩点3.58/4.0，排名2/79。培养了系统思维和工程化能力，担任院学生会新闻部副部长。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2022.06-至今</div>
+                    <div class="tl-title">网易互娱 · OA国际版负责人</div>
+                    <div class="tl-desc">负责国际组统筹安排，对接Workday ERP系统等。熟悉Web API Design & Development及SQL Server等，推动国际化办公自动化。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2019.07-2022.05</div>
+                    <div class="tl-title">华为技术有限公司 · 软件工程师（Cloud & AI）</div>
+                    <div class="tl-desc"><strong>算法</strong>：团伙挖掘、孤立森林检测异常登录，访问间隔方差识别周期性爬虫、URL比例发现资源爬虫等。<strong>服务端</strong>：基于云原生的k8s服务搭建弹性伸缩的微服务后端，配合3AZ/负载均衡/探针等保证服务可靠性。<strong>架构</strong>：搭建动态规则架构，参数/代码级热更新，作为零信任大脑保护SaaS，借助火焰图达成20倍性能。<strong>可视化</strong>：创建应用拓扑，预聚合加速访问；通过ELK展示实时访问、风险；埋点分析并优化用户使用率。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2019.03-2019.05</div>
+                    <div class="tl-title">深旷（上海）信息服务 · 实习算法工程师</div>
+                    <div class="tl-desc">搭建自动机器学习平台，实现数据预处理、特征选择、算法选择、算法调优自动化。文本情绪分析交易策略回测年化收益超100%，经实盘验证。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2016.04-2016.08</div>
+                    <div class="tl-title">广州阳伞文化 · 实习软件工程师</div>
+                    <div class="tl-desc">在阿里云搭建CentOS下LNMP环境的后端（www.whatyouneed.cc），设计影评等API供100W读者使用。使用PHP、MySQL、Bootstrap搭建CMS，应用百度文字编辑器减少编辑50%工作负担。</div>
+                </div>
+                <div class="tl-item">
+                    <div class="tl-year">2014.03-2015.03</div>
+                    <div class="tl-title">金山软件 · 市场部校园代表</div>
+                    <div class="tl-desc">有效组织超300人WPS软件使用培训，提升用户体验。举办PPT设计大赛带来几百名新用户。担任院学生会新闻部副部长，公众号日均受众800+人。</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== OPINIONS ==================== -->
+    <section class="opinions-section">
+        <div class="opinion-slide">
+            <div class="opinion-number">✦</div>
+            <p class="opinion-text">最会用AI的<br>是最知道自己想要什么的人</p>
+            <span class="opinion-deco">— what I believe</span>
+        </div>
+    </section>
+    
+    <!-- ==================== PROJECTS ==================== -->
+    <section class="projects">
+        <div class="projects-inner">
+            <p class="section-label fade-up">What I Do</p>
+            <h2 class="projects-headline fade-up">三个核心项目</h2>
+            <div class="project-grid">
+                <div class="project-card project-card--1 fade-up" data-tilt>
+                    <div class="project-card-bg-text">量化</div>
+                    <div class="project-card-content">
+                        <div class="project-card-emoji">📈</div>
+                        <h3 class="project-card-title">事件驱动的量化交易</h3>
+                        <p class="project-card-desc">Python爬取实时新闻，基于情感分析及词共现矩阵的集合模型，预测短期特定品种走势准确率90%以上。训练逻辑回归等模型预测多组合涨跌，毫秒级交易三次实战单次收益率超50%。搭建回测平台分析市场表现。</p>
+                        <span class="project-card-tag">Python · 2019.03-2019.05</span>
+                    </div>
+                </div>
+                <div class="project-card project-card--2 fade-up fade-up-delay-1" data-tilt>
+                    <div class="project-card-bg-text">AI</div>
+                    <div class="project-card-content">
+                        <div class="project-card-emoji">🐕</div>
+                        <h3 class="project-card-title">基于迁移学习的狗狗分类</h3>
+                        <p class="project-card-desc">结合ImageNet预训练模型和120类狗狗训练图进行迁移学习，配合TensorFlow Serving进行模型部署。实现Flask框架下狗狗图片的网页上传、转换及分类预测，关联相应类别狗狗的百科进行图文展示。</p>
+                        <span class="project-card-tag">TensorFlow · 2019.03-2019.05</span>
+                    </div>
+                </div>
+                <div class="project-card project-card--1 fade-up fade-up-delay-2" data-tilt>
+                    <div class="project-card-bg-text">ML</div>
+                    <div class="project-card-content">
+                        <div class="project-card-emoji">📊</div>
+                        <h3 class="project-card-title">课堂情绪识别与成绩预测</h3>
+                        <p class="project-card-desc">获得许可收集上百人课堂多角度视频进行分析。应用kNN对CK+人脸数据库进行情绪识别，7分类预测准确度83%。根据7种情绪比例利用GBRT预测成绩，解释方差达到0.7。部署微信小程序进行图像识别。</p>
+                        <span class="project-card-tag">Python · 教育大数据课题组</span>
+                    </div>
+                </div>
+                <div class="project-card project-card--2 fade-up fade-up-delay-3" data-tilt>
+                    <div class="project-card-bg-text">Java</div>
+                    <div class="project-card-content">
+                        <div class="project-card-emoji">⚡</div>
+                        <h3 class="project-card-title">进程内消息引擎比赛</h3>
+                        <p class="project-card-desc">赛题来自阿里中间件大赛，基于生产者消费者模式，70s内将10G大小的1600W条数据持久化后再读出。使用单例模式加同步锁保证写同步，分文件存储加速，java.util.zip压缩，ByteBuffer减少磁盘写次数。</p>
+                        <span class="project-card-tag">Java · 阿里中间件大赛</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== EXTRACURRICULAR ==================== -->
+    <section class="extracurricular-section" style="padding: 8rem 2rem; background: #f5f2ea;">
+        <div class="extracurricular-inner" style="max-width: 1100px; margin: 0 auto;">
+            <p class="section-label fade-up">Extracurricular</p>
+            <h2 class="timeline-section-headline fade-up">课外经历</h2>
+            
+            <div class="extracurricular-list" style="display: flex; flex-direction: column; gap: 2.5rem; margin-top: 3rem;">
+                <div class="extracurricular-item fade-up" style="background: #fff; border-radius: 20px; padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="font-family: 'Huiwen Mincho', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem;">DeeCamp AI训练营成员</h3>
+                            <p style="color: #666; font-size: 0.9rem;">创新工场人工智能工程院 · 2018.07-2018.08</p>
+                        </div>
+                        <span style="padding: 0.3rem 0.9rem; background: #F4D758; border-radius: 100px; font-size: 0.75rem; font-weight: 600; color: #1a1a1a;">28组最佳团队</span>
+                    </div>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #F4D758;">✦</span> 跟随图灵奖得主John Hopcroft学习人工智能课程</li>
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #F4D758;">✦</span> 解决室内场景客流分析，使用OpenPose等方法进行身体及人脸关键点检测</li>
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #F4D758;">✦</span> 结合多摄像头进行有遮挡的轨迹跟踪及热力图分析</li>
+                    </ul>
+                </div>
+                
+                <div class="extracurricular-item fade-up fade-up-delay-1" style="background: #fff; border-radius: 20px; padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+                    <div style="margin-bottom: 1rem;">
+                        <h3 style="font-family: 'Huiwen Mincho', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.3rem;">副部长 · 院学生会新闻部</h3>
+                        <p style="color: #666; font-size: 0.9rem;">北京建筑大学 · 2015.09-2016.07</p>
+                    </div>
+                    <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #2B7FD8;">✦</span> 公众号新闻日均受众超800人</li>
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #2B7FD8;">✦</span> 举办百人三行情书比赛，提升校园影响力</li>
+                        <li style="padding-left: 1.5rem; position: relative; line-height: 1.6; color: #555;"><span style="position: absolute; left: 0; color: #2B7FD8;">✦</span> 设计剪辑宣传视频，总观看人数超过两千人次</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== SKILLS ==================== -->
+    <section class="skills-section" style="padding: 8rem 2rem; background: #fefcf6;">
+        <div class="skills-inner" style="max-width: 1100px; margin: 0 auto;">
+            <p class="section-label fade-up">Skills</p>
+            <h2 class="timeline-section-headline fade-up">技能专长</h2>
+            
+            <div class="skills-categories" style="display: flex; flex-direction: column; gap: 2.5rem; margin-top: 3rem;">
+                <div class="skill-category fade-up">
+                    <h3 style="font-family: 'Huiwen Mincho', serif; font-size: 1.2rem; margin-bottom: 1rem; color: #2B7FD8;">软件开发</h3>
+                    <div class="skill-tags" style="display: flex; flex-wrap: wrap; gap: 0.8rem;">
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Web API Dev</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Java</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Python</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">C</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Linux</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Spring</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Redis</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Nginx</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Docker</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">k8s</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Git</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Axure</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">JavaScript</span>
+                    </div>
+                </div>
+                
+                <div class="skill-category fade-up">
+                    <h3 style="font-family: 'Huiwen Mincho', serif; font-size: 1.2rem; margin-bottom: 1rem; color: #F4D758;">数据 & AI</h3>
+                    <div class="skill-tags" style="display: flex; flex-wrap: wrap; gap: 0.8rem;">
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">SQL Server</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">MySQL</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Flink</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Spark</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Kafka</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">ELK</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Hive</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">HBase</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Hadoop</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">MapReduce</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Sklearn</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">TensorFlow</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">R</span>
+                    </div>
+                </div>
+                
+                <div class="skill-category fade-up">
+                    <h3 style="font-family: 'Huiwen Mincho', serif; font-size: 1.2rem; margin-bottom: 1rem; color: #F7A946;">证书 & 其他</h3>
+                    <div class="skill-tags" style="display: flex; flex-wrap: wrap; gap: 0.8rem;">
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">华为可信编程专业级</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">中级软件设计师</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">数学建模美赛二等奖</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">Kaggle 11%</span>
+                        <span style="padding: 0.5rem 1.2rem; background: #fff; border-radius: 100px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">CET-6</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ==================== CONTACT ==================== -->
+    <section class="contact">
+        <div class="contact-inner">
+            <h2 class="contact-headline fade-up">Say Hi</h2>
+            <p class="contact-sub fade-up">I don't bite — my AI might though.</p>
+            <div class="contact-links fade-up">
+                <a href="mailto:hnx@pku.edu.cn" class="contact-link">📮 hnx@pku.edu.cn</a>
+                <a href="https://www.linkedin.com/in/nanxionghuang" target="_blank" rel="noopener" class="contact-link">💼 LinkedIn</a>
+                <a href="https://xwasp1995.github.io" target="_blank" class="contact-link">🌐 个人网站</a>
+            </div>
+            <div class="contact-address fade-up" style="margin-top: 1.5rem; font-size: 0.85rem; opacity: 0.5;">
+                📍 北京市海淀区颐和园路5号，100871
+            </div>
+            <p class="contact-quote fade-up">"找到你喜欢的事，然后让它杀死你。"<br>— Charles Bukowski（大概是这个意思）</p>
+        </div>
+    </section>
+    
+    <footer class="footer">
+        <p>© 2026 黄南雄 · Built with AI & attitude</p>
+    </footer>
+    
+    <script>
+        /* ============ TERMINAL TYPEWRITER ============ */
+        (function() {
+            const body = document.getElementById('terminalBody');
+            
+            // Define terminal lines: { type: 'cmd'|'output'|'blank', text, html }
+            const lines = [
+                 { type: 'cmd',    text: '$ whoami' },
+                 { type: 'output', html: '<span class="output">黄南雄</span>' },
+                 { type: 'blank' },
+                 { type: 'cmd',    text: '$ cat about.md' },
+                 { type: 'output', html: '<span class="output">黄南雄 — 算法工程师 & 全栈开发者</span>' },
+                 { type: 'output', html: '<span class="output">📍 北京市海淀区颐和园路5号，100871</span>' },
+                 { type: 'output', html: '<span class="output">📮 hnx@pku.edu.cn</span>' },
+                 { type: 'output', html: '<span class="output">北京大学软件工程大数据方向（GPA 3.7/4.0）· 优秀毕业生</span>' },
+                 { type: 'output', html: '<span class="output">加州大学圣地亚哥分校交换（GPA 3.0/4.0，北京市教委奖学金1/428）</span>' },
+                 { type: 'output', html: '<span class="output">网易互娱 OA国际版负责人 | 华为Cloud&AI软件工程师</span>' },
+                 { type: 'blank' },
+                 { type: 'cmd',    text: '$ echo "PKU + UCSD + NetEase + Huawei = 成长之路"' },
+                 { type: 'output', html: '<span class="highlight">✨</span>' },
+             ];
+            
+            // Create all line elements
+            const lineEls = [];
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'terminal-line';
+                if (line.type === 'blank') {
+                    div.innerHTML = '&nbsp;';
+                }
+                lineEls.push({ el: div, data: line });
+                body.appendChild(div);
+            });
+            
+            // Add cursor line
+            const cursorLine = document.createElement('div');
+            cursorLine.className = 'terminal-line visible';
+            cursorLine.innerHTML = '<span class="terminal-cursor"></span>';
+            cursorLine.style.opacity = '0';
+            body.appendChild(cursorLine);
+            
+            // Typewriter engine
+            let lineIdx = 0;
+            
+            function typeNextLine() {
+                if (lineIdx >= lineEls.length) {
+                    // Done — show cursor
+                    cursorLine.style.opacity = '1';
+                    return;
+                }
+                
+                const { el, data } = lineEls[lineIdx];
+                el.classList.add('visible');
+                lineIdx++;
+                
+                if (data.type === 'blank') {
+                    setTimeout(typeNextLine, 150);
+                    return;
+                }
+                
+                if (data.type === 'cmd') {
+                    // Type command character by character (fast)
+                    typeText(el, data.text, 'cmd', 45, () => {
+                        setTimeout(typeNextLine, 300);
+                    });
+                } else {
+                    // Output — type slightly slower with > prefix
+                    const prefix = '<span class="cmd">&gt; </span>';
+                    el.innerHTML = prefix;
+                    // Slightly delay then reveal output
+                    setTimeout(() => {
+                        el.innerHTML = prefix + data.html;
+                        setTimeout(typeNextLine, 200);
+                    }, 120);
+                }
+            }
+            
+            function typeText(el, text, className, speed, callback) {
+                // Parse: $ prefix in blue, rest in gray
+                const parts = text.match(/^(\$ )(.*)/);
+                let charIdx = 0;
+                
+                if (parts) {
+                    el.innerHTML = '<span class="cmd">$ </span>';
+                    const restText = parts[2];
+                    charIdx = 0;
+                    
+                    function typeChar() {
+                        if (charIdx < restText.length) {
+                            el.innerHTML = '<span class="cmd">$ </span><span class="cmd-text">' + restText.substring(0, charIdx + 1) + '</span>';
+                            charIdx++;
+                            setTimeout(typeChar, speed + Math.random() * 30);
+                        } else {
+                            if (callback) callback();
+                        }
+                    }
+                    typeChar();
+                } else {
+                    el.textContent = '';
+                    function typeChar() {
+                        if (charIdx < text.length) {
+                            el.textContent += text[charIdx];
+                            charIdx++;
+                            setTimeout(typeChar, speed);
+                        } else {
+                            if (callback) callback();
+                        }
+                    }
+                    typeChar();
+                }
+            }
+            
+            // Start after short delay
+            setTimeout(typeNextLine, 600);
+        })();
+        
+        /* ============ ABOUT CHAT — INTERSECTION TRIGGER ============ */
+        (function() {
+            const aboutSection = document.getElementById('aboutSection');
+            if (!aboutSection) return;
+            
+            let triggered = false;
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !triggered) {
+                        triggered = true;
+                        // Bubbles already have animation-delay set in CSS; we just need to trigger them
+                        const bubbles = aboutSection.querySelectorAll('.chat-bubble');
+                        bubbles.forEach(b => {
+                            b.style.animationPlayState = 'running';
+                        });
+                    }
+                });
+            }, { threshold: 0.2 });
+            
+            // Initially pause all bubble animations
+            const bubbles = aboutSection.querySelectorAll('.chat-bubble');
+            bubbles.forEach(b => {
+                b.style.animationPlayState = 'paused';
+            });
+            
+            observer.observe(aboutSection);
+        })();
+        
+        /* ============ INTERSECTION OBSERVER ============ */
+        (function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+            
+            document.querySelectorAll('.fade-up, .tl-item, .opinion-text').forEach(el => {
+                observer.observe(el);
+            });
+        })();
+        
+        /* ============ MOUSE FOLLOW CURSOR GLOW ============ */
+        (function() {
+            const glow = document.getElementById('cursorGlow');
+            let mx = 0, my = 0, gx = 0, gy = 0;
+            
+            document.addEventListener('mousemove', (e) => {
+                mx = e.clientX;
+                my = e.clientY;
+            });
+            
+            function animate() {
+                gx += (mx - gx) * 0.08;
+                gy += (my - gy) * 0.08;
+                glow.style.left = gx + 'px';
+                glow.style.top = gy + 'px';
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+        
+        /* ============ CARD TILT (MOUSE FOLLOW) ============ */
+        (function() {
+            document.querySelectorAll('[data-tilt]').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) / rect.width - 0.5;
+                    const y = (e.clientY - rect.top) / rect.height - 0.5;
+                    card.style.transform = `perspective(800px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) translateY(-4px)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'perspective(800px) rotateY(0) rotateX(0) translateY(0)';
+                });
+            });
+        })();
+        
+        /* ============ PARALLAX ON SCROLL (lightweight) ============ */
+        (function() {
+            const terminalWin = document.querySelector('.terminal-window');
+            if (!terminalWin) return;
+            
+            window.addEventListener('scroll', () => {
+                const st = window.pageYOffset;
+                if (st < window.innerHeight) {
+                    const ratio = st / window.innerHeight;
+                    terminalWin.style.transform = `translateY(${st * 0.15}px)`;
+                    terminalWin.style.opacity = 1 - ratio * 0.6;
+                }
+            }, { passive: true });
+        })();
+    </script>
+</body>
+</html>
